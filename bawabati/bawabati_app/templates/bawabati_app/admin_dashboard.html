@@ -1,0 +1,115 @@
+{% extends "bawabati_app/base.html" %}
+
+{% block title %}Admin Dashboard - Bawabati{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">Admin Dashboard</h1>
+    
+    <div class="row">
+        <!-- Users Stats -->
+        <div class="col-md-4 mb-4">
+            <div class="card border-primary h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i> Users
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h1 class="display-4 text-center mb-3">{{ users.count }}</h1>
+                    <div class="row text-center">
+                        <div class="col">
+                            <h5>{{ admin_count }}</h5>
+                            <p class="text-muted">Admins</p>
+                        </div>
+                        <div class="col">
+                            <h5>{{ teacher_count }}</h5>
+                            <p class="text-muted">Teachers</p>
+                        </div>
+                        <div class="col">
+                            <h5>{{ student_count }}</h5>
+                            <p class="text-muted">Students</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'user_list' %}" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-users me-1"></i> Manage Users
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Courses Stats -->
+        <div class="col-md-4 mb-4">
+            <div class="card border-success h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-book me-2"></i> Courses
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h1 class="display-4 text-center">{{ courses.count }}</h1>
+                    <p class="card-text text-center">Total Courses</p>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'course_list' %}" class="btn btn-success btn-sm w-100">
+                        <i class="fas fa-book me-1"></i> Manage Courses
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-md-4 mb-4">
+            <div class="card border-info h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i> Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'user_create' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-user-plus me-1"></i> Add New User
+                        </a>
+                        <a href="{% url 'course_create' %}" class="btn btn-outline-success">
+                            <i class="fas fa-plus-circle me-1"></i> Create New Course
+                        </a>
+                        <a href="{% url 'note_create' %}" class="btn btn-outline-info">
+                            <i class="fas fa-file-upload me-1"></i> Upload Note
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Courses -->
+    <h3 class="mt-4 mb-3">Recent Courses</h3>
+    <div class="row">
+        {% for course in courses|slice:":3" %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title">{{ course.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ course.description|truncatewords:20 }}</p>
+                    <p class="card-text"><small class="text-muted">Teacher: {{ course.assigned_teacher.get_full_name|default:course.assigned_teacher.username }}</small></p>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-primary">View Details</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                No courses found. <a href="{% url 'course_create' %}">Create your first course</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

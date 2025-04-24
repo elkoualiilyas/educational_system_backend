@@ -1,0 +1,85 @@
+{% extends "bawabati_app/base.html" %}
+
+{% block title %}Courses - Bawabati{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Courses</h1>
+        {% if user.userprofile.role == 'admin' %}
+        <a href="{% url 'course_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus-circle me-1"></i> Add New Course
+        </a>
+        {% endif %}
+    </div>
+    
+    <div class="row">
+        {% for course in courses %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title">{{ course.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ course.description|truncatewords:25 }}</p>
+                    <p class="card-text"><small class="text-muted">
+                        Teacher: {{ course.assigned_teacher.get_full_name|default:course.assigned_teacher.username }}
+                    </small></p>
+                    
+                    {% with note_count=course.notes.count %}
+                    <p class="card-text">
+                        <span class="badge bg-info">{{ note_count }} Note{{ note_count|pluralize }}</span>
+                    </p>
+                    {% endwith %}
+                    
+                    {% if user.userprofile.role == 'admin' or user == course.assigned_teacher %}
+                    {% with enrollment_count=course.enrollments.count %}
+                    <p class="card-text">
+                        <span class="badge bg-success">{{ enrollment_count }} Student{{ enrollment_count|pluralize }}</span>
+                    </p>
+                    {% endwith %}
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-primary">View Details</a>
+                    
+                    {% if user.userprofile.role == 'admin' %}
+                    <a href="{% url 'course_update' course.id %}" class="btn btn-sm btn-warning">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a href="{% url 'course_delete' course.id %}" class="btn btn-sm btn-danger">
+                        <i class="fas fa-trash"></i> Delete
+                    </a>
+                    {% endif %}
+                    
+                    {% if user.userprofile.role == 'student' %}
+                    {% if course in user.enrollment_set.all %}
+                    <span class="badge bg-success">Enrolled</span>
+                    {% else %}
+                    <a href="{% url 'enroll_course' course.id %}" class="btn btn-sm btn-success">
+                        <i class="fas fa-user-plus"></i> Enroll
+                    </a>
+                    {% endif %}
+                    {% endif %}
+                    
+                    {% if user.userprofile.role == 'teacher' and user == course.assigned_teacher or user.userprofile.role == 'admin' %}
+                    <a href="{% url 'note_create' %}?course={{ course.id }}" class="btn btn-sm btn-info">
+                        <i class="fas fa-file-upload"></i> Add Note
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                No courses found.
+                {% if user.userprofile.role == 'admin' %}
+                <a href="{% url 'course_create' %}">Create your first course</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

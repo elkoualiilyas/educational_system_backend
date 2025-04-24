@@ -1,0 +1,91 @@
+{% extends 'bawabati_app/base.html' %}
+
+{% block title %}Dashboard - Bawabati Education System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Welcome, {{ user.get_full_name|default:user.username }}!</h1>
+
+    {% if user.userprofile.role == 'admin' %}
+        <!-- Admin Dashboard -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Users</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">Total Users: {{ users.count }}</p>
+                        <a href="{% url 'user_list' %}" class="btn btn-primary">Manage Users</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Courses</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">Total Courses: {{ courses.count }}</p>
+                        <a href="{% url 'course_list' %}" class="btn btn-primary">Manage Courses</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% elif user.userprofile.role == 'teacher' %}
+        <!-- Teacher Dashboard -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">My Courses</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if courses %}
+                            <div class="list-group">
+                                {% for course in courses %}
+                                    <a href="{% url 'course_detail' course.pk %}" class="list-group-item list-group-item-action">
+                                        <h6 class="mb-1">{{ course.title }}</h6>
+                                        <p class="mb-1">{{ course.description|truncatewords:30 }}</p>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">You don't have any courses assigned yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% else %}
+        <!-- Student Dashboard -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">My Enrolled Courses</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if enrollments %}
+                            <div class="list-group">
+                                {% for enrollment in enrollments %}
+                                    <a href="{% url 'course_detail' enrollment.course.pk %}" class="list-group-item list-group-item-action">
+                                        <h6 class="mb-1">{{ enrollment.course.title }}</h6>
+                                        <p class="mb-1">Teacher: {{ enrollment.course.assigned_teacher.get_full_name }}</p>
+                                        <small class="text-muted">Enrolled on: {{ enrollment.enrollment_date|date:"F j, Y" }}</small>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">You haven't enrolled in any courses yet.</p>
+                            <a href="{% url 'course_list' %}" class="btn btn-primary">Browse Available Courses</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 
