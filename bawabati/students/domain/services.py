@@ -7,6 +7,8 @@ from datetime import date
 from typing import List, Optional
 from decimal import Decimal
 
+from bawabati.bawabati_app.models import Course
+
 from .entities import Enrollment, StudentProfile, Grade, AcademicRecord
 from .value_objects import StudentId, GradePoint, Semester, AssessmentType
 from .repositories import UnitOfWork
