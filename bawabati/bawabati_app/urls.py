@@ -37,4 +37,10 @@ urlpatterns = [
     # Notes
     path('notes/add/', views.NoteCreateView.as_view(), name='note_create'),
     path('notes/<int:pk>/delete/', views.NoteDeleteView.as_view(), name='note_delete'),
+    
+    # Grade URLs
+    path('course/<int:course_pk>/grades/', views.view_grades, name='view_grades'),
+    path('course/<int:course_pk>/student/<int:student_pk>/grade/<int:semester>/<str:assessment_type>/add/', 
+         views.GradeCreateView.as_view(), name='grade_create'),
+    path('grade/<int:pk>/edit/', views.GradeUpdateView.as_view(), name='grade_update'),
 ] 

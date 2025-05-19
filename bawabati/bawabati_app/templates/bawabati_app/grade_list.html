@@ -1,0 +1,177 @@
+{% extends "bawabati_app/base.html" %}
+{% load grade_filters %}
+
+{% block title %}Grades - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Grades for {{ course.title }}</h4>
+                    {% if is_teacher %}
+                        <a href="{% url 'course_detail' course.pk %}" class="btn btn-light">Back to Course</a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% for semester in "12"|make_list %}
+                    <div class="semester-section mb-4">
+                        <h5 class="border-bottom pb-2">Semester {{ semester }}</h5>
+                        
+                        {% with semester_grades=grades|filter_grades_by_semester:semester|dictsort:"student.username"|regroup_by:"student" %}
+                        {% if semester_grades %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Premier Contrôle</th>
+                                        <th>Deuxième Contrôle</th>
+                                        <th>Continuous Assessment</th>
+                                        <th>Final Exam</th>
+                                        <th>Final Average</th>
+                                        {% if is_teacher %}
+                                            <th>Actions</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for student_grades in semester_grades %}
+                                    {% with student=student_grades.grouper %}
+                                    <tr>
+                                        <td>{{ student.get_full_name|default:student.username }}</td>
+                                        <td>
+                                            {% with control1=student_grades.list|filter_grades:"control_1"|first %}
+                                            {% if control1 %}
+                                                {{ control1.final_grade }}/20
+                                                {% if is_teacher %}
+                                                    <a href="{% url 'grade_update' control1.pk %}" class="btn btn-sm btn-outline-primary ms-2">Edit</a>
+                                                {% endif %}
+                                            {% else %}
+                                                {% if is_teacher %}
+                                                    <a href="{% url 'grade_create' course.pk student.pk semester 'control_1' %}" class="btn btn-sm btn-primary">Add</a>
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                        <td>
+                                            {% with control2=student_grades.list|filter_grades:"control_2"|first %}
+                                            {% if control2 %}
+                                                {{ control2.final_grade }}/20
+                                                {% if is_teacher %}
+                                                    <a href="{% url 'grade_update' control2.pk %}" class="btn btn-sm btn-outline-primary ms-2">Edit</a>
+                                                {% endif %}
+                                            {% else %}
+                                                {% if is_teacher %}
+                                                    <a href="{% url 'grade_create' course.pk student.pk semester 'control_2' %}" class="btn btn-sm btn-primary">Add</a>
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                        <td>
+                                            {% with report=reports|filter_reports:student|first %}
+                                            {% if report.continuous_assessment_average %}
+                                                {{ report.continuous_assessment_average|floatformat:2 }}/20
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                        <td>
+                                            {% with exam=student_grades.list|filter_grades:"exam"|first %}
+                                            {% if exam %}
+                                                {{ exam.final_grade }}/20
+                                                {% if is_teacher %}
+                                                    <a href="{% url 'grade_update' exam.pk %}" class="btn btn-sm btn-outline-primary ms-2">Edit</a>
+                                                {% endif %}
+                                            {% else %}
+                                                {% if is_teacher %}
+                                                    <a href="{% url 'grade_create' course.pk student.pk semester 'exam' %}" class="btn btn-sm btn-primary">Add</a>
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                        <td>
+                                            {% with report=reports|filter_reports:student|first %}
+                                            {% if report.final_average %}
+                                                {{ report.final_average|floatformat:2 }}/20
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                        {% if is_teacher %}
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#gradeDetails{{ student.pk }}{{ semester }}">
+                                                Details
+                                            </button>
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endwith %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            No grades found for semester {{ semester }}.
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_teacher %}
+<!-- Grade Details Modals -->
+{% for semester in "12"|make_list %}
+{% with semester_grades=grades|filter_grades_by_semester:semester|dictsort:"student.username"|regroup_by:"student" %}
+{% for student_grades in semester_grades %}
+{% with student=student_grades.grouper %}
+<div class="modal fade" id="gradeDetails{{ student.pk }}{{ semester }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Grade Details - {{ student.get_full_name|default:student.username }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% for grade in student_grades.list %}
+                <div class="mb-3">
+                    <h6>{{ grade.get_assessment_type_display }}</h6>
+                    <p><strong>Written:</strong> {{ grade.written_grade }}/20</p>
+                    {% if grade.participation %}
+                        <p><strong>Participation:</strong> {{ grade.participation }}/20</p>
+                    {% endif %}
+                    {% if grade.homework %}
+                        <p><strong>Homework:</strong> {{ grade.homework }}/20</p>
+                    {% endif %}
+                    <p><strong>Final Grade:</strong> {{ grade.final_grade }}/20</p>
+                    {% if grade.comments %}
+                        <p><strong>Comments:</strong> {{ grade.comments }}</p>
+                    {% endif %}
+                    <p class="text-muted">Graded by: {{ grade.graded_by.get_full_name|default:grade.graded_by.username }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endwith %}
+{% endfor %}
+{% endwith %}
+{% endfor %}
+{% endif %}
+{% endblock %} 

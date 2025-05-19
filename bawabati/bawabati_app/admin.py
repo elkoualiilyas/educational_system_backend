@@ -12,10 +12,10 @@ class CourseAdmin(admin.ModelAdmin):
     search_fields = ('title', 'description')
 
 class NoteAdmin(admin.ModelAdmin):
-    list_display = ('title', 'course', 'uploaded_by', 'upload_date')
+    list_display = ('title', 'course', 'uploaded_by', 'created_at')
     list_filter = ('course', 'uploaded_by')
     search_fields = ('title', 'course__title')
-    date_hierarchy = 'upload_date'
+    date_hierarchy = 'created_at'
 
 class EnrollmentAdmin(admin.ModelAdmin):
     list_display = ('student', 'course', 'enrollment_date')

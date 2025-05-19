@@ -1,0 +1,55 @@
+{% extends "bawabati_app/base.html" %}
+{% load crispy_forms_tags %}
+{% load grade_filters %}
+
+{% block title %}{% if form.instance.pk %}Edit Grade{% else %}Add Grade{% endif %} - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        {% if form.instance.pk %}
+                            Edit Grade
+                        {% else %}
+                            Add Grade
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Course: {{ course.title }}</h5>
+                        <h6>Student: {{ student.get_full_name|default:student.username }}</h6>
+                        <p class="text-muted">
+                            {{ semester|ordinal }} Semester - {{ assessment_type|title }}
+                        </p>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ form.written_grade|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.participation|as_crispy_field }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.homework|as_crispy_field }}
+                            </div>
+                        </div>
+                        {{ form.comments|as_crispy_field }}
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'course_detail' course.pk %}" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Grade</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
