@@ -48,16 +48,19 @@ INSTALLED_APPS = [
     'debug_toolbar',  # Django Debug Toolbar
     'crispy_forms',  # Crispy Forms
     'crispy_bootstrap5',  # Crispy Forms Bootstrap 5
+    'rest_framework',  # Django REST Framework
+    'corsheaders',  # CORS headers
     'bawabati_app',  # Main app
-    'students',
-    'teachers',
-    'courses',
-    'grades',
+    'students',  # Students app
+    'teachers',  # Teachers app
+    'courses',  # Courses app
+    'grades',  # Grades app
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CORS middleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -165,3 +168,25 @@ INTERNAL_IPS = [
 # Crispy Forms settings
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+# REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+# CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # React development server
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]

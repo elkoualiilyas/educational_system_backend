@@ -1,0 +1,314 @@
+✅ Step 1: Install Dependencies and Libraries
+Activate your virtual environment and install these crucial dependencies:
+
+
+pip install flask
+pip install langchain langchain-community langchain-core
+pip install langchain-ollama
+pip install ollama
+pip install faiss-cpu
+pip install beautifulsoup4 requests tqdm
+
+Note:
+
+langchain-community, langchain-core, and langchain-ollama are essential for integration with Ollama.
+
+faiss-cpu is essential for efficient vector search (RAG).
+
+✅ Step 2: Install and Setup Ollama Locally
+Download and install Ollama (from ollama.com).
+
+Pull the Llama3 model from Ollama directly:
+
+ollama pull llama3
+
+✅ Step 3: Creating Your Own Fine-Tuned Model with Ollama
+Create a Modelfile in your project directory (e.g., Modelfile):
+
+
+FROM llama3
+SYSTEM """
+You are a math-solving assistant. Provide step-by-step clear mathematical solutions.
+"""
+Then, run:
+
+
+ollama create allo_mathy -f Modelfile
+Your fine-tuned model (allo_mathy) is now ready!
+
+✅ Step 4: Running Your Ollama Server
+Start Ollama server and keep it running:
+
+
+ollama serve
+✅ Step 5: Verify Your Fine-Tuned Model
+Quick test to ensure it works (solver.py):
+
+
+from langchain_ollama import OllamaLLM
+from langchain_core.prompts import PromptTemplate
+
+ollama_llm = OllamaLLM(
+    base_url="http://127.0.0.1:11434",
+    model="allo_mathy"
+)
+
+prompt = PromptTemplate(
+    input_variables=["math_problem"],
+    template="Solve this math problem step-by-step: {math_problem}"
+)
+
+chain = prompt | ollama_llm
+
+response = chain.invoke({"math_problem": "2x + 3x + 7 = 23"})
+print("AI Response:")
+print(response)
+Run it:
+
+
+python solver.py
+✅ Step 6: Prepare Structured Data for RAG (JSONL format)
+Create a file named math_prompts.jsonl structured clearly as:
+
+json
+
+{"prompt": "2x+3x=20", "completion": "Combine like terms: 5x=20, so x=4."}
+{"prompt": "Solve x²-4=0", "completion": "Set x²=4, thus x=±2."}
+...
+Recommendation: Aim for around 50-100 clearly structured problems and solutions.
+
+✅ Step 7: Set Up RAG (Retrieval-Augmented Generation)
+Create your solver_rag.py for enhanced accuracy and faster results:
+
+python
+Copier
+Modifier
+from langchain_ollama import OllamaLLM
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain_core.prompts import PromptTemplate
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+import json
+
+# Load structured dataset
+with open("math_prompts.jsonl", 'r', encoding='utf-8') as file:
+    data = [json.loads(line) for line in file]
+
+# Prepare documents
+documents = [f"Problem: {item['prompt']}\nSolution: {item['completion']}" for item in data]
+
+# Split documents
+splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+docs = splitter.create_documents(documents)
+
+# Embeddings using your custom fine-tuned model
+embeddings = OllamaEmbeddings(model="allo_mathy")
+
+# FAISS vectorstore for RAG
+db = FAISS.from_documents(docs, embeddings)
+
+# Initialize your custom model
+llm = OllamaLLM(model="allo_mathy")
+
+# RAG prompt template
+prompt = PromptTemplate.from_template("""
+Use these examples to solve the problem clearly step-by-step:
+
+{context}
+
+Problem:
+{question}
+
+Solution:
+""")
+
+# Define and solve a new question
+question = "Solve for x: 3x + 6 = 15"
+
+# Retrieve similar examples from FAISS
+retriever = db.as_retriever(search_kwargs={"k": 3})
+relevant_docs = retriever.get_relevant_documents(question)
+context = "\n\n".join([doc.page_content for doc in relevant_docs])
+
+# Solve with your fine-tuned model
+chain = prompt | llm
+response = chain.invoke({"context": context, "question": question})
+
+print("RAG-based Response:")
+print(response)
+Run the RAG solver:
+
+bash
+Copier
+Modifier
+python solver_rag.py
+✅ Step 8: Integrate RAG Solver into Your Flask Web App
+Simple Flask backend (app.py):
+
+python
+Copier
+Modifier
+from flask import Flask, request, jsonify
+from solver_rag import chain, db, prompt
+
+app = Flask(__name__)
+
+@app.route('/solve', methods=['POST'])
+def solve():
+    data = request.json
+    question = data['math_problem']
+    retriever = db.as_retriever(search_kwargs={"k": 3})
+    relevant_docs = retriever.get_relevant_documents(question)
+    context = "\n\n".join([doc.page_content for doc in relevant_docs])
+    
+    response = chain.invoke({"context": context, "question": question})
+    return jsonify({"solution": response})
+
+if __name__ == '__main__':
+    app.run(debug=True)
+✅ Step 9: Frontend Integration (Optional)
+Integrate this Flask backend with your HTML/CSS (or Tailwind) frontend to send math problems via API calls (fetch or axios) and display solutions.
+
+Example JavaScript fetch call:
+
+javascript
+Copier
+Modifier
+async function solveMathProblem(problem) {
+    const response = await fetch('/solve', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({"math_problem": problem})
+    });
+    const data = await response.json();
+    console.log(data.solution);
+}
+
+
+#step9:
+	this is he code for batch training for the chatbot evaluation
+
+import json
+import re
+class ChatbotEvaluator:
+    def __init__(self):
+        self.correct_answers = 0
+        self.total_questions = 0
+    
+    def evaluate_answer(self, input_problem, chatbot_solution, correct_solution):
+        """Evaluates the chatbot's solution against the correct solution."""
+        
+        # Increment the total questions count
+        self.total_questions += 1
+        
+        # For simplicity, we compare the solutions directly.
+        # In a real-world scenario, you may want to use more advanced techniques
+        # like regex matching, semantic analysis, or string similarity.
+        if self.is_numerical(input_problem):
+            if self.validate_numerical_answer(chatbot_solution, correct_solution):
+                self.correct_answers += 1
+        
+        elif self.is_step_by_step(input_problem):
+            if self.validate_step_by_step_solution(chatbot_solution, correct_solution):
+                self.correct_answers += 1
+        
+        elif self.is_multiple_choice(input_problem):
+            if self.validate_multiple_choice(chatbot_solution, correct_solution):
+                self.correct_answers += 1
+    
+    def is_numerical(self, input_problem):
+        """Check if the problem requires a numerical answer."""
+        return isinstance(input_problem, (int, float))
+    
+    def is_step_by_step(self, input_problem):
+        """Check if the problem requires a step-by-step explanation."""
+        return isinstance(input_problem, str) and "étape" in input_problem
+    
+    def is_multiple_choice(self, input_problem):
+        """Check if the problem is a multiple-choice question."""
+        return isinstance(input_problem, dict) and 'choices' in input_problem
+    
+    def validate_numerical_answer(self, chatbot_solution, correct_solution):
+        """Validate numerical answers by comparing the chatbot's answer with the correct one."""
+        # We assume exact matching for simplicity. In a real case, we'd use some tolerance.
+        return chatbot_solution.strip() == correct_solution.strip()
+    
+    def validate_step_by_step_solution(self, chatbot_solution, correct_solution):
+        """Validate the step-by-step solution by comparing it to the correct answer's steps."""
+        # Here we could use string matching or more complex comparison like Levenshtein distance.
+        return chatbot_solution.strip() == correct_solution.strip()
+    
+    def validate_multiple_choice(self, chatbot_solution, correct_solution):
+        """Validate the multiple-choice selection."""
+        return chatbot_solution.strip() == correct_solution.strip()
+    
+    def display_performance(self):
+        performance_percentage = (self.correct_answers / self.total_questions) * 100
+        return f"Performance: {self.correct_answers}/{self.total_questions} correct answers ({performance_percentage:.2f}%)"
+
+def load_dataset(file_path):
+    """Load your dataset of prompts and completions from a JSON file or any other format"""
+    with open(file_path, 'r') as file:
+        return json.load(file)  # Assuming dataset is in JSON format
+
+def batch_evaluation(dataset):
+    evaluator = ChatbotEvaluator()
+    
+    for data in dataset:
+        input_problem = data['prompt']
+        chatbot_solution = data['completion']
+        correct_solution = data.get('correct_solution', '')  # If correct_solution field is available
+        
+        # Evaluate the chatbot solution against the correct solution
+        evaluator.evaluate_answer(input_problem, chatbot_solution, correct_solution)
+    
+    # Display the final performance
+    return evaluator.display_performance()
+
+# Example usage:
+dataset = load_dataset('path_to_your_data.json')  # Replace with actual file path
+performance = batch_evaluation(dataset)
+print(performance)
+
+# step 10:
+	this is the algorithm used by ollama
+
+Ollama, the AI model is based on transformer-based architectures, which are a class of deep learning models primarily used in natural language processing (NLP). These architectures are widely used in state-of-the-art models like GPT, BERT, T5, and more. However, Ollama is specifically designed to work with large language models (LLMs) in a way that optimizes performance for conversational AI and knowledge retrieval tasks.
+
+Key Algorithms and Concepts Used by Ollama:
+Transformer Architecture:
+
+Ollama uses the Transformer architecture, which was introduced in the paper "Attention is All You Need" by Vaswani et al. (2017).
+
+Self-Attention Mechanism: A key part of the transformer architecture, self-attention allows the model to consider the relationships between all words in a sequence, regardless of their distance from each other. This is essential for tasks like text generation and comprehension.
+
+Positional Encoding: Since transformers don't process sequences sequentially, positional encoding is added to provide the model with information about the position of words in a sentence.
+
+Language Modeling (LM):
+
+Ollama likely uses autoregressive language modeling where the model is trained to predict the next token (word or sub-word) in a sequence given the previous tokens. This is a common approach for text generation models like GPT (Generative Pre-trained Transformer).
+
+It generates coherent and contextually relevant text by modeling the probability distribution of the next word in a sequence based on the previous context.
+
+Pre-training and Fine-tuning:
+
+Pre-training: The model is initially trained on a large corpus of general text data to learn language patterns, grammar, syntax, and some basic world knowledge.
+
+Fine-tuning: Ollama might undergo fine-tuning on domain-specific data (like math, science, or any specialized knowledge) to adapt the model's responses to be more accurate in those contexts. This process is essential for task-specific applications such as question answering or problem-solving.
+
+Retrieval-Augmented Generation (RAG):
+
+Ollama integrates a Retrieval-Augmented Generation (RAG) pipeline, which is a method used to improve language models by incorporating external knowledge retrieval during the generation process.
+
+RAG combines:
+
+Retrieval: The model retrieves relevant documents or snippets from a database (e.g., Wikipedia, knowledge base) based on the query.
+
+Generation: The model then generates the final response by conditioning on both the input query and the retrieved documents.
+
+This hybrid approach allows Ollama to provide more factual and contextually rich answers rather than relying solely on the knowledge stored in its parameters.
+
+Attention Mechanisms:
+
+In addition to self-attention, transformers use multi-head attention, which allows the model to focus on different parts of the input sequence simultaneously, enhancing the model's ability to understand context in longer text sequences.
+
